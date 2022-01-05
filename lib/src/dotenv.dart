@@ -1,9 +1,5 @@
 import 'dart:async';
-
-import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart' show rootBundle;
-import 'package:flutter/widgets.dart';
+import 'dart:io';
 
 import 'errors.dart';
 import 'parser.dart';
@@ -70,8 +66,7 @@ class DotEnv {
     _isInitialized = true;
   }
 
-  void testLoad(
-      {String fileInput = '', Parser parser = const Parser(), Map<String, String> mergeWith = const {}}) {
+  void testLoad({String fileInput = '', Parser parser = const Parser(), Map<String, String> mergeWith = const {}}) {
     clean();
     final linesFromFile = fileInput.split('\n');
     final linesFromMergeWith = mergeWith.entries.map((entry) => "${entry.key}=${entry.value}").toList();
@@ -88,13 +83,18 @@ class DotEnv {
 
   Future<List<String>> _getEntriesFromFile(String filename) async {
     try {
-      WidgetsFlutterBinding.ensureInitialized();
-      var envString = await rootBundle.loadString(filename);
+      // WidgetsFlutterBinding.ensureInitialized();
+      // var envString = await rootBundle.loadString(filename);
+      var file = '.env';
+      var path = Uri.parse('.').resolveUri(Uri.file(file)).toFilePath();
+      if (path == '') path = '.';
+      var resolved = await File(path).resolveSymbolicLinks();
+      var envString = await File(resolved).readAsString();
       if (envString.isEmpty) {
         throw EmptyEnvFileError();
       }
       return envString.split('\n');
-    } on FlutterError {
+    } on Exception {
       throw FileNotFoundError();
     }
   }
